@@ -1,31 +1,17 @@
-#PART 4 — Simple App Interface
-#Task 6: Streamlit App
 import pandas as pd
 import numpy as np
-
 import streamlit as st
 
 from sklearn.feature_extraction.text import (
     TfidfVectorizer,
     ENGLISH_STOP_WORDS
 )
-
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-# -----------------------------------
-# Load Dataset
-# -----------------------------------
-
-df = pd.read_csv("tmdb_5000_movies.csv")
-
-
-# -----------------------------------
-# Clean Text
-# -----------------------------------
-
-df["overview"] = df["overview"].fillna("")
-
+# ==========================================
+# TEXT CLEANING
+# ==========================================
 
 def clean_text(text):
 
@@ -48,37 +34,41 @@ def clean_text(text):
     return " ".join(words)
 
 
-df["clean_text"] = df["overview"].apply(
-    clean_text
-)
+# ==========================================
+# LOAD DATA + TF-IDF
+# ==========================================
+
+@st.cache_data
+def load_data():
+
+    df = pd.read_csv("tmdb_5000_movies.csv")
+
+    # Handle missing overviews
+    df["overview"] = df["overview"].fillna("")
+
+    # Clean text
+    df["clean_text"] = df["overview"].apply(clean_text)
+
+    # TF-IDF
+    tfidf = TfidfVectorizer(
+        max_features=5000,
+        ngram_range=(1, 2)
+    )
+
+    tfidf_matrix = tfidf.fit_transform(
+        df["clean_text"]
+    )
+
+    return df, tfidf_matrix
 
 
-# -----------------------------------
-# TF-IDF
-# -----------------------------------
-
-tfidf = TfidfVectorizer(
-    max_features=5000,
-    ngram_range=(1, 2)
-)
-
-tfidf_matrix = tfidf.fit_transform(
-    df["clean_text"]
-)
+# Load once and cache
+df, tfidf_matrix = load_data()
 
 
-# -----------------------------------
-# Similarity
-# -----------------------------------
-
-similarity_matrix = cosine_similarity(
-    tfidf_matrix
-)
-
-
-# -----------------------------------
-# Recommendation Function
-# -----------------------------------
+# ==========================================
+# RECOMMENDATION FUNCTION
+# ==========================================
 
 def recommend(item_name, top_n=5):
 
@@ -93,18 +83,22 @@ def recommend(item_name, top_n=5):
 
     item_index = matches[0]
 
-    scores = similarity_matrix[item_index]
+    # Calculate similarity ONLY for selected movie
+    scores = cosine_similarity(
+        tfidf_matrix[item_index],
+        tfidf_matrix
+    ).flatten()
 
-    similar_indices = np.argsort(
-        scores
-    )[::-1]
+    # Sort highest similarity first
+    similar_indices = np.argsort(scores)[::-1]
 
+    # Remove selected movie
     similar_indices = [
-        i
-        for i in similar_indices
+        i for i in similar_indices
         if i != item_index
     ]
 
+    # Get top results
     top_indices = similar_indices[:top_n]
 
     recommendations = pd.DataFrame({
@@ -118,9 +112,9 @@ def recommend(item_name, top_n=5):
     return recommendations
 
 
-# -----------------------------------
-# Streamlit UI
-# -----------------------------------
+# ==========================================
+# STREAMLIT INTERFACE
+# ==========================================
 
 st.title("🎬 Movie Recommendation System")
 
@@ -141,13 +135,24 @@ selected_movie = st.selectbox(
 )
 
 
-# Recommendation button
-if st.button("Get Recommendations"):
+# Number of recommendations
+top_n = st.slider(
+    "Number of recommendations:",
+    min_value=1,
+    max_value=10,
+    value=5
+)
 
-    recommendations = recommend(
-        selected_movie,
-        top_n=5
-    )
+
+# Recommendation button
+if st.button("🎯 Get Recommendations"):
+
+    with st.spinner("Finding similar movies..."):
+
+        recommendations = recommend(
+            selected_movie,
+            top_n
+        )
 
     st.subheader(
         f"Movies similar to {selected_movie}"
