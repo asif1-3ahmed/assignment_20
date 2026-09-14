@@ -1,0 +1,67 @@
+# 🎬 Movie Recommendation System
+
+A content-based movie recommendation system built using Python, Scikit-learn, and Streamlit.
+
+## 📌 Project Overview
+
+This project recommends movies that are similar to a movie selected by the user.
+
+The system uses the movie overview/description to find similar movies.
+
+## 📊 Dataset
+
+**Dataset:** TMDB 5000 Movie Dataset
+
+**Source:** Kaggle
+
+The dataset contains movie information including:
+
+- Movie ID
+- Movie title
+- Movie overview
+- Genres
+- Release date
+- Popularity
+- Vote average
+
+The `title` and `overview` columns are primarily used for this recommendation system.
+
+## 🛠️ Technologies Used
+
+- Python
+- Pandas
+- NumPy
+- Scikit-learn
+- Streamlit
+
+## 🔍 Methodology
+
+1. Load the TMDB movie dataset.
+2. Handle missing movie overviews.
+3. Clean the movie overview text.
+4. Remove stopwords.
+5. Convert movie descriptions into TF-IDF vectors.
+6. Calculate cosine similarity between movies.
+7. Recommend the most similar movies.
+8. Display recommendations through a Streamlit web application.
+
+## 🤖 Recommendation Technique
+
+The project uses **content-based filtering**.
+
+### TF-IDF
+
+TF-IDF converts movie descriptions into numerical vectors based on the importance of words.
+
+### Cosine Similarity
+
+Cosine similarity is used to measure how similar two movie descriptions are.
+
+Movies with higher similarity scores are recommended first.
+
+## 🚀 How to Run Locally
+
+Install the required libraries:
+
+```bash
+pip install -r requirements.txt
